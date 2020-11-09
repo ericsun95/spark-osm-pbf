@@ -1,0 +1,17 @@
+*.class
+*.log
+target/
+core/src/pbf_generated/
+project/project/
+.idea/
+.idea_modules/
+.bsp/
+.DS_Store
+.gradle
+.idea
+*.javaEe
+*.javae
+*.iml
+*.ipr
+*.iws
+out
