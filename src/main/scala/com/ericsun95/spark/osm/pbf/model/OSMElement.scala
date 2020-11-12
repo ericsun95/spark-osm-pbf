@@ -2,7 +2,9 @@ package com.ericsun95.spark.osm.pbf.model
 
 import java.io.Serializable
 
-import org.openstreetmap.osmosis.osmbinary.osmformat.{DenseInfo, DenseNodes, Info, Node, Relation, StringTable, Way}
+import com.ericsun95.spark.osm.pbf.model.OSMElement.OSMRelation.RelationMember
+import com.ericsun95.spark.osm.pbf.utils.DecoderUtils
+import org.openstreetmap.osmosis.osmbinary.osmformat._
 
 sealed trait OSMElement extends Product with Serializable {
   val id: Long
@@ -15,61 +17,7 @@ sealed trait OSMElement extends Product with Serializable {
   val visible: Option[Boolean]
 }
 
-object OSMElement {
-
-  private val COORDINATE_SCALING_FACTOR = 0.000000001
-  private val DEFAULT_LAT_OFFSET = 0L
-  private val DEFAULT_LON_OFFSET = 0L
-  private val DEFAULT_GRANULARITY = 100
-  private val DEFAULT_DATE_GRANULARITY: Int = 1000
-  private val DEFAULT_CHARSET: String = "UTF-8"
-
-  def getStringById(id: Int, osmosisStringTable: StringTable): String = {
-    osmosisStringTable.s(id).toString(DEFAULT_CHARSET)
-  }
-
-  def getOptionalVersion(optionalInfo: Option[Info]): Option[Int] = {
-    optionalInfo.filter(_.version.isDefined).map(_.version.get)
-  }
-
-  def getOptionalTimeStamp(optionalInfo: Option[Info], dateGranularity: Int): Option[Long] = {
-    optionalInfo.filter(_.timestamp.isDefined).map(_.timestamp.get * dateGranularity)
-  }
-
-  def getOptionalChangeset(optionalInfo: Option[Info]): Option[Long] = {
-    optionalInfo.filter(_.changeset.isDefined).map(_.changeset.get)
-  }
-
-  def getOptionalUid(optionalInfo: Option[Info]): Option[Int] = {
-    optionalInfo.filter(_.uid.isDefined).map(_.uid.get)
-  }
-
-  def getOptionalUserSid(optionalInfo: Option[Info]): Option[Int] = {
-    optionalInfo.filter(_.userSid.isDefined).map(_.userSid.get)
-  }
-
-  def getOptionalUser(optionalInfo: Option[Info], osmosisStringTable: StringTable): Option[String] = {
-    getOptionalUserSid(optionalInfo).map(getStringById(_, osmosisStringTable))
-  }
-
-  def getOptionalVisible(optionalInfo: Option[Info]): Option[Boolean] = {
-    optionalInfo.filter(_.visible.isDefined).map(_.visible.get)
-  }
-
-  def getTags(key: Seq[Int], value: Seq[Int], osmosisStringTable: StringTable): Seq[(String, String)] = {
-    (key, value).zipped.map { (k, v) =>
-      (getStringById(k, osmosisStringTable), getStringById(v, osmosisStringTable))
-    }
-  }
-
-  //TODO: Unify this two with Generic Type
-  def getCumulativeSumInt(deltaSeq: Seq[Int]): Seq[Int] = {
-    deltaSeq.scanLeft(0) {_ + _}.drop(1)
-  }
-
-  def getCumulativeSumLong(deltaSeq: Seq[Long]): Seq[Long] = {
-    deltaSeq.scanLeft(0L) {_ + _}.drop(1)
-  }
+object OSMElement extends Serializable with DecoderUtils {
 
   case class OSMNode(id: Long,
                      lat: Double,
@@ -80,7 +28,20 @@ object OSMElement {
                      changeset: Option[Long] = None,
                      uid: Option[Int] = None,
                      user: Option[String] = None,
-                     visible: Option[Boolean] = None) extends OSMElement
+                     visible: Option[Boolean] = None) extends OSMElement {
+    override def toString: String = {
+      s"Node id: ${id}, " +
+        s"coordinate: (${lat}, ${lon}), " +
+        s"tags: ${tag}, " +
+        s"version: ${version.getOrElse("None")}," +
+        s"timestamp: ${timestamp.getOrElse("None")}, " +
+        s"changeset: ${changeset.getOrElse("None")}, " +
+        s"uid: ${uid.getOrElse("None")}, " +
+        s"user: ${user.getOrElse("None")}, " +
+        s"visible: ${visible.getOrElse("None")}\n"
+    }
+  }
+
 
   object OSMNode {
     //TODO: Add support toXML and fromXML
@@ -131,25 +92,29 @@ object OSMElement {
         COORDINATE_SCALING_FACTOR*(LON_OFFSET + GRANULARITY*lon)
       })
 
-      val tagsIterator: Iterator[Int] = osmosisDenseNode.keysVals.iterator
-      var tagsSeq: Seq[Seq[(String, String)]] = Seq[Seq[(String, String)]]()
+      val tagsIterator = osmosisDenseNode.keysVals.iterator
+      var tagsSeq = List[Seq[(String, String)]]()
       while(tagsIterator.hasNext) {
-        val tag = tagsIterator.takeWhile(_.equals(0L)).grouped(2).map(tag =>
-          (getStringById(tag.head, osmosisStringTable), getStringById(tag.last, osmosisStringTable))
-        )
-        tagsSeq ++ tag
+        val tagSeq = tagsIterator.takeWhile(_ != 0L).grouped(2).map(pair =>
+          (getStringById(pair.head, osmosisStringTable), getStringById(pair.last, osmosisStringTable))
+        ).toList
+        tagsSeq = tagsSeq :+ tagSeq
       }
 
+      assert(tagsSeq.size == IdSeq.size)
+      assert(IdSeq.size == latSeq.size)
+      assert(IdSeq.size == lonSeq.size)
+
       val denseInfoCollection: Option[DenseInfo] = osmosisDenseNode.denseinfo
-      val versionSeq: Option[Seq[Int]] = denseInfoCollection.map(info => getCumulativeSumInt(info.version))
+      val versionSeq: Option[Seq[Int]] = denseInfoCollection.filter(_.version.nonEmpty).map(info => info.version)
       val timestampSeq: Option[Seq[Long]] = denseInfoCollection.map(
         x => getCumulativeSumLong(x.timestamp).map(_ * dateGranularity.getOrElse(DEFAULT_DATE_GRANULARITY))
       )
       val changesetSeq: Option[Seq[Long]] = denseInfoCollection.filter(_.changeset.nonEmpty).map(info => getCumulativeSumLong(info.changeset))
-      val uidSeq: Option[Seq[Int]] = denseInfoCollection.map(info => getCumulativeSumInt(info.uid))
-      val userSidSeq: Option[Seq[Int]] = denseInfoCollection.map(info => getCumulativeSumInt(info.userSid))
+      val uidSeq: Option[Seq[Int]] = denseInfoCollection.filter(_.uid.nonEmpty).map(info => getCumulativeSumInt(info.uid))
+      val userSidSeq: Option[Seq[Int]] = denseInfoCollection.filter(_.userSid.nonEmpty).map(info => getCumulativeSumInt(info.userSid))
       val userSeq: Option[Seq[String]] = userSidSeq.map(x => x.map(getStringById(_, osmosisStringTable)))
-      val visibleSeq: Option[Seq[Boolean]] = denseInfoCollection.map(info => info.visible)
+      val visibleSeq: Option[Seq[Boolean]] = denseInfoCollection.filter(_.visible.nonEmpty).map(info => info.visible)
 
       val len = IdSeq.size
       (0 until len) map {
@@ -166,7 +131,6 @@ object OSMElement {
           visibleSeq.map(_(i))
         )
       }
-
     }
   }
 
@@ -178,7 +142,19 @@ object OSMElement {
                     changeset: Option[Long] = None,
                     uid: Option[Int] = None,
                     user: Option[String] = None,
-                    visible: Option[Boolean] = None) extends OSMElement
+                    visible: Option[Boolean] = None) extends OSMElement {
+    override def toString: String = {
+      s"Way id: ${id}, " +
+        s"nodes: ${nds}, " +
+        s"tags: ${tag}, " +
+        s"version: ${version.getOrElse("None")}," +
+        s"timestamp: ${timestamp.getOrElse("None")}, " +
+        s"changeset: ${changeset.getOrElse("None")}, " +
+        s"uid: ${uid.getOrElse("None")}, " +
+        s"user: ${user.getOrElse("None")}, " +
+        s"visible: ${visible.getOrElse("True")}\n"
+    }
+  }
 
   object OSMWay {
 
@@ -213,9 +189,23 @@ object OSMElement {
                          changeset: Option[Long] = None,
                          uid: Option[Int] = None,
                          user: Option[String] = None,
-                         visible: Option[Boolean] = None) extends OSMElement
+                         visible: Option[Boolean] = None) extends OSMElement {
+    override def toString: String = {
+      s"Relation id: ${id}, " +
+        s"relations: ${relations}, " +
+        s"tags: ${tag}, " +
+        s"version: ${version.getOrElse("None")}," +
+        s"timestamp: ${timestamp.getOrElse("None")}, " +
+        s"changeset: ${changeset.getOrElse("None")}, " +
+        s"uid: ${uid.getOrElse("None")}, " +
+        s"user: ${user.getOrElse("None")}, " +
+        s"visible: ${visible.getOrElse("None")}\n"
+    }
+  }
 
   object OSMRelation {
+
+    case class RelationMember(`type`: String, ref: Long, role: String)
 
     //TODO: Add support toXML and fromXML
     def getRelationMember(ids: Seq[Long], types: Seq[Relation.MemberType],
@@ -252,7 +242,5 @@ object OSMElement {
     }
   }
 }
-
-case class RelationMember(`type`: String, ref: Long, role: String)
 
 
