@@ -15,3 +15,4 @@ project/project/
 *.ipr
 *.iws
 out
+/src/test/resources/com/ericsun95/spark/osm/pbf/*.txt
