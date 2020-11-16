@@ -21,6 +21,6 @@ class PBFFileParser(dis: InputStream) extends Iterator[OSMElement] {
 }
 
 object PBFFileParser {
-  private val HEADER_TYPE = "OSMHeader"
-  private val PRIMITIVE_TYPE = "OSMData"
+  val HEADER_TYPE: String = "OSMHeader"
+  val PRIMITIVE_TYPE: String = "OSMData"
 }

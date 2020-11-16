@@ -3,3 +3,9 @@
 before_install:
   - sudo apt-get -qq update
   - sudo apt-get install -y protobuf-compiler
+
+script:
+  - sbt clean coverage test coverageReport
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
