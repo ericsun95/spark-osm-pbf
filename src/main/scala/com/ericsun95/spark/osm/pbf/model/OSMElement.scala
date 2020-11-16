@@ -29,6 +29,8 @@ object OSMElement extends Serializable with DecoderUtils {
                      uid: Option[Int] = None,
                      user: Option[String] = None,
                      visible: Option[Boolean] = None) extends OSMElement {
+
+    //TODO: Update this to String in geoJSON
     override def toString: String = {
       s"Node id: ${id}, " +
         s"coordinate: (${lat}, ${lon}), " +
@@ -44,8 +46,8 @@ object OSMElement extends Serializable with DecoderUtils {
 
 
   object OSMNode {
-    //TODO: Add support toXML and fromXML
 
+    //TODO: Add support toXML and fromXML
     def apply(osmosisNode: Node,
               osmosisStringTable: StringTable,
               latOffset: Option[Long],
