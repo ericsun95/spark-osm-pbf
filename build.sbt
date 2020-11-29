@@ -20,10 +20,13 @@ libraryDependencies ++= Seq(
   "org.slf4j" % "slf4j-api" % "1.7.25" % Provided,
   "org.scalatest" %% "scalatest" % "3.2.2" % Test,
   "com.novocode" % "junit-interface" % "0.11" % Test,
-  "org.apache.spark" %% "spark-core" % sparkVersion,
-  "org.apache.spark" %% "spark-sql" % sparkVersion,
+  "org.apache.spark" %% "spark-core" % sparkVersion % Provided,
+  "org.apache.spark" %% "spark-sql" % sparkVersion % Provided,
   "org.scala-lang" % "scala-library" % scalaVersion.value % Provided,
   // (optional) If you need scalapb/scalapb.proto or anything from
   // google/protobuf/*.proto
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf"
 )
+
+test in assembly := {}
+coverageExcludedPackages := "<empty>;org.openstreetmap.osmosis.osmbinary.*"
