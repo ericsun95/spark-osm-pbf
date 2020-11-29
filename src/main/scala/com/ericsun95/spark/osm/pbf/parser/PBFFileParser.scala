@@ -9,8 +9,8 @@ class PBFFileParser(dis: InputStream) extends Iterator[OSMElement] {
   private val pbfStreamIterator: Iterator[RawBlob] = new PBFStreamParser(dis)
     .withFilter(_.blobtype == PBFFileParser.PRIMITIVE_TYPE)
 
-  private val pbfBlobIterator: Iterator[Blob] = pbfStreamIterator.map(Blob parseFrom _.blob)
-  private val pbfElementIterator: Iterator[OSMElement] = pbfBlobIterator.flatMap(new PBFBlobParser(_))
+  val pbfBlobIterator: Iterator[Blob] = pbfStreamIterator.map(Blob parseFrom _.blob)
+  val pbfElementIterator: Iterator[OSMElement] = pbfBlobIterator.flatMap(new PBFBlobParser(_))
 
   override def hasNext: Boolean = pbfElementIterator.hasNext
 
