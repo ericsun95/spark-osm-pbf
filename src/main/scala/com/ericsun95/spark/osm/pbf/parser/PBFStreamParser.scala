@@ -22,6 +22,7 @@ class PBFStreamParser(dis: InputStream) extends Iterator[RawBlob] {
 
   private def readBlob(blobHeader: BlobHeader): Array[Byte] = {
     val blob = new Array[Byte](blobHeader.datasize)
+    // Currently, this step is the bottleneck when reading gb data with limited memory
     dataInputStream.readFully(blob)
     blob
   }

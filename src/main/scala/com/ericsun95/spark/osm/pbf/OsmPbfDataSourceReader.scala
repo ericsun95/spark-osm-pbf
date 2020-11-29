@@ -34,6 +34,5 @@ class OsmPbfDataSourceReader(paths: Array[String]) extends DataSourceReader {
 }
 
 object OsmPbfDataSourceReader {
-  //TODO: Try reflection on case class with option?
   private val DEFAULT_SCHEMA = ScalaReflection.schemaFor[OSMInternalRow].dataType.asInstanceOf[StructType]
 }

@@ -3,15 +3,16 @@ package com.ericsun95.spark.osm.pbf.parser
 import java.util.logging.Logger
 import java.util.zip.{DataFormatException, Inflater}
 
-import com.ericsun95.spark.osm.pbf.model.OSMElement
 import com.ericsun95.spark.osm.pbf.model.OSMElement.{OSMNode, OSMRelation, OSMWay}
+import com.ericsun95.spark.osm.pbf.model.{OSMElement, PrimitiveGroupType}
 import org.openstreetmap.osmosis.osmbinary.fileformat.Blob
 import org.openstreetmap.osmosis.osmbinary.osmformat._
 
+//TODO: Add filter here to speed up filtering
 class PBFBlobParser(blob: Blob) extends Iterator[OSMElement] {
 
   private lazy val logger = Logger.getLogger(this.getClass.getName)
-  private val primitiveBlock: PrimitiveBlock = PrimitiveBlock parseFrom blobDecompressor(blob)
+  private lazy val primitiveBlock: PrimitiveBlock = PrimitiveBlock parseFrom blobDecompressor(blob)
   private var groupIdCursor: Int = 0
   private var elementIdCursor: Int = 0
   private var denseNodesSeq: Option[Seq[OSMNode]] = None
@@ -96,12 +97,13 @@ class PBFBlobParser(blob: Blob) extends Iterator[OSMElement] {
 
   //TODO: Add filter here to speed up filtering
   def extractPrimitiveGroup(currentPrimitiveGroup: PrimitiveGroup): OSMElement = {
-    currentPrimitiveGroup match {
-      case _ if currentPrimitiveGroup.nodes.nonEmpty => populateNode(currentPrimitiveGroup)
-      case _ if currentPrimitiveGroup.ways.nonEmpty => populateWay(currentPrimitiveGroup)
-      case _ if currentPrimitiveGroup.relations.nonEmpty => populateRelation(currentPrimitiveGroup)
-      case _ if currentPrimitiveGroup.changesets.nonEmpty => throw new Exception ("No support on changeset")
-      case _ if currentPrimitiveGroup.dense.isDefined => populateDenseNode(currentPrimitiveGroup)
+    import PrimitiveGroupType._
+    PrimitiveGroupType(currentPrimitiveGroup) match {
+      case Nodes => populateNode(currentPrimitiveGroup)
+      case Ways => populateWay(currentPrimitiveGroup)
+      case Relations => populateRelation(currentPrimitiveGroup)
+      case Changesets => throw new Exception ("No support on changeset")
+      case DenseNodes => populateDenseNode(currentPrimitiveGroup)
     }
   }
 
