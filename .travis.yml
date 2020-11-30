@@ -9,7 +9,8 @@ jobs:
 
 before_install:
   - sudo apt-get -qq update
-  - sudo apt-get install -y protobuf-compiler
+  - sudo apt-get install -y wget cmake protobuf-compiler
+  - protoc --version
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
