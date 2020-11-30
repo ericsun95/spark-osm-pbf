@@ -5,7 +5,7 @@ jobs:
     - scala: 2.11.12
       jdk: openjdk8
       script:
-        - sbt clean coverage test coverageReport
+        - sbt clean coverage "++$TRAVIS_SCALA_VERSION test" coverageReport
 
 before_install:
   - sudo apt-get -qq update
