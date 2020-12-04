@@ -3,5 +3,6 @@ addSbtPlugin("com.github.gseitz" % "sbt-protobuf" % "0.6.5")
 addSbtPlugin("org.scalastyle" %% "scalastyle-sbt-plugin" % "1.0.0" excludeAll(
   ExclusionRule(organization = "com.danieltrinh")))
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.6.1")
+addSbtPlugin("org.scoverage" % "sbt-coveralls" % "1.2.7")
 libraryDependencies += "com.thesamet.scalapb" %% "compilerplugin" % "0.9.8"
 
