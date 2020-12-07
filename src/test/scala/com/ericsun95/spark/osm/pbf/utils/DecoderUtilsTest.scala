@@ -39,8 +39,8 @@ class DecoderUtilsTest extends AnyFunSuite with Matchers with BeforeAndAfterAll 
   test("get cumulative sum correctly") {
     val deltaSeq: Seq[Int] = Seq(0, 1, 1, 1)
     val deltaSeqLong: Seq[Long] = Seq(0L, 1L, 1L, 1L)
-    getCumulativeSumInt(deltaSeq) shouldBe Seq(0, 1, 2, 3)
-    getCumulativeSumLong(deltaSeqLong) shouldBe Seq(0L, 1L, 2L, 3L)
+    getCumulativeSum(deltaSeq) shouldBe Seq(0, 1, 2, 3)
+    getCumulativeSum(deltaSeqLong) shouldBe Seq(0L, 1L, 2L, 3L)
   }
 
 
