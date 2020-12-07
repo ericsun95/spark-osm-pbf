@@ -86,11 +86,11 @@ object OSMElement extends Serializable with DecoderUtils {
       val LON_OFFSET = lonOffset.getOrElse(DEFAULT_LON_OFFSET)
       val GRANULARITY = granularity.getOrElse(DEFAULT_GRANULARITY)
 
-      val IdSeq: Seq[Long] = getCumulativeSumLong(osmosisDenseNode.id)
-      val latSeq: Seq[Double] = getCumulativeSumLong(osmosisDenseNode.lat).map(lat => {
+      val IdSeq: Seq[Long] = getCumulativeSum(osmosisDenseNode.id)
+      val latSeq: Seq[Double] = getCumulativeSum(osmosisDenseNode.lat).map(lat => {
         COORDINATE_SCALING_FACTOR*(LAT_OFFSET + GRANULARITY*lat)
       })
-      val lonSeq: Seq[Double] = getCumulativeSumLong(osmosisDenseNode.lon).map(lon => {
+      val lonSeq: Seq[Double] = getCumulativeSum(osmosisDenseNode.lon).map(lon => {
         COORDINATE_SCALING_FACTOR*(LON_OFFSET + GRANULARITY*lon)
       })
 
@@ -110,11 +110,11 @@ object OSMElement extends Serializable with DecoderUtils {
       val denseInfoCollection: Option[DenseInfo] = osmosisDenseNode.denseinfo
       val versionSeq: Option[Seq[Int]] = denseInfoCollection.filter(_.version.nonEmpty).map(info => info.version)
       val timestampSeq: Option[Seq[Long]] = denseInfoCollection.map(
-        x => getCumulativeSumLong(x.timestamp).map(_ * dateGranularity.getOrElse(DEFAULT_DATE_GRANULARITY))
+        x => getCumulativeSum(x.timestamp).map(_ * dateGranularity.getOrElse(DEFAULT_DATE_GRANULARITY))
       )
-      val changesetSeq: Option[Seq[Long]] = denseInfoCollection.filter(_.changeset.nonEmpty).map(info => getCumulativeSumLong(info.changeset))
-      val uidSeq: Option[Seq[Int]] = denseInfoCollection.filter(_.uid.nonEmpty).map(info => getCumulativeSumInt(info.uid))
-      val userSidSeq: Option[Seq[Int]] = denseInfoCollection.filter(_.userSid.nonEmpty).map(info => getCumulativeSumInt(info.userSid))
+      val changesetSeq: Option[Seq[Long]] = denseInfoCollection.filter(_.changeset.nonEmpty).map(info => getCumulativeSum(info.changeset))
+      val uidSeq: Option[Seq[Int]] = denseInfoCollection.filter(_.uid.nonEmpty).map(info => getCumulativeSum(info.uid))
+      val userSidSeq: Option[Seq[Int]] = denseInfoCollection.filter(_.userSid.nonEmpty).map(info => getCumulativeSum(info.userSid))
       val userSeq: Option[Seq[String]] = userSidSeq.map(x => x.map(getStringById(_, osmosisStringTable)))
       val visibleSeq: Option[Seq[Boolean]] = denseInfoCollection.filter(_.visible.nonEmpty).map(info => info.visible)
 
@@ -166,7 +166,7 @@ object OSMElement extends Serializable with DecoderUtils {
               dateGranularity: Option[Int]): OSMWay = {
 
       val DATE_GRANULARITY: Int = dateGranularity.getOrElse(DEFAULT_DATE_GRANULARITY)
-      val nodes: Seq[Long] = getCumulativeSumLong(osmosisWay.refs)
+      val nodes: Seq[Long] = getCumulativeSum(osmosisWay.refs)
       val optionalInfo: Option[Info] = osmosisWay.info
 
       OSMWay(
@@ -225,7 +225,7 @@ object OSMElement extends Serializable with DecoderUtils {
       val DATE_GRANULARITY: Int = dateGranularity.getOrElse(DEFAULT_DATE_GRANULARITY)
 
       // Decode members references in stored in delta compression.
-      val members: Seq[Long] = getCumulativeSumLong(osmosisRelation.memids)
+      val members: Seq[Long] = getCumulativeSum(osmosisRelation.memids)
       val relations: Seq[RelationMember] = getRelationMember(members,
         osmosisRelation.types, osmosisRelation.rolesSid, osmosisStringTable)
       val optionalInfo: Option[Info] = osmosisRelation.info

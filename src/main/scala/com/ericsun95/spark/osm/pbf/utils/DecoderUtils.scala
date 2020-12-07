@@ -49,13 +49,8 @@ trait DecoderUtils {
     }
   }
 
-  //TODO: Unify this two with Generic Type
-  def getCumulativeSumInt(deltaSeq: Seq[Int]): Seq[Int] = {
-    deltaSeq.scanLeft(0) {_ + _}.drop(1)
-  }
-
-  def getCumulativeSumLong(deltaSeq: Seq[Long]): Seq[Long] = {
-    deltaSeq.scanLeft(0L) {_ + _}.drop(1)
+  def getCumulativeSum[A](xs: Seq[A])(implicit num: Numeric[A]): Seq[A] = {
+    xs.tail.scanLeft(xs.head)(num.plus)
   }
 
 }
